@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const { getDb } = require('../database');
+const { limitesDe, planRequerido } = require('../middleware/plan');
 
 // GET /api/presupuestos
 router.get('/', authMiddleware, (req, res) => {
@@ -47,6 +48,13 @@ router.post('/', authMiddleware, (req, res) => {
     db.prepare('UPDATE presupuestos SET monto_limite = ? WHERE id = ?').run(monto_limite, existente.id);
     const updated = db.prepare('SELECT * FROM presupuestos WHERE id = ?').get(existente.id);
     return res.json(updated);
+  }
+
+  // El límite se aplica por mes, igual que la vista del frontend
+  const limite = limitesDe(req.userId).presupuestos;
+  const { total } = db.prepare('SELECT COUNT(*) AS total FROM presupuestos WHERE user_id = ? AND mes = ? AND anio = ?').get(req.userId, mes, anio);
+  if (total >= limite) {
+    return planRequerido(res, `El plan Gratis permite ${limite} presupuestos. Mejora tu plan para crear más.`);
   }
 
   const result = db.prepare('INSERT INTO presupuestos (user_id, categoria_id, monto_limite, mes, anio) VALUES (?, ?, ?, ?, ?)').run(req.userId, categoria_id, monto_limite, mes, anio);

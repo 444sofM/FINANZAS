@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const { getDb } = require('../database');
+const { limitesDe, planRequerido } = require('../middleware/plan');
 
 // GET /api/metas
 router.get('/', authMiddleware, (req, res) => {
@@ -27,6 +28,12 @@ router.post('/', authMiddleware, (req, res) => {
   }
 
   const db = getDb();
+  const limite = limitesDe(req.userId).metas;
+  const { total } = db.prepare('SELECT COUNT(*) AS total FROM metas_ahorro WHERE user_id = ?').get(req.userId);
+  if (total >= limite) {
+    return planRequerido(res, `El plan Gratis permite ${limite} metas. Mejora tu plan para crear más.`);
+  }
+
   const result = db.prepare(`
     INSERT INTO metas_ahorro (user_id, nombre, monto_objetivo, fecha_limite, descripcion, color, icono)
     VALUES (?, ?, ?, ?, ?, ?, ?)

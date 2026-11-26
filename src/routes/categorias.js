@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const { getDb } = require('../database');
+const { requierePlan } = require('../middleware/plan');
+
+const soloPlus = requierePlan('categoriasPersonalizadas', 'Crear categorías personalizadas está disponible en el plan Plus.');
 
 // GET /api/categorias/ingresos
 router.get('/ingresos', authMiddleware, (req, res) => {
@@ -18,7 +21,7 @@ router.get('/egresos', authMiddleware, (req, res) => {
 });
 
 // POST /api/categorias/ingresos
-router.post('/ingresos', authMiddleware, (req, res) => {
+router.post('/ingresos', authMiddleware, soloPlus, (req, res) => {
   const { nombre, icono, color } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
 
@@ -29,7 +32,7 @@ router.post('/ingresos', authMiddleware, (req, res) => {
 });
 
 // POST /api/categorias/egresos
-router.post('/egresos', authMiddleware, (req, res) => {
+router.post('/egresos', authMiddleware, soloPlus, (req, res) => {
   const { nombre, icono, color } = req.body;
   if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
 

@@ -91,6 +91,23 @@ function initializeTables() {
       FOREIGN KEY (categoria_id) REFERENCES categorias_egreso(id) ON DELETE CASCADE
     );
   `);
+
+  migrarPlanes();
+}
+
+// Columnas de suscripción en bases de datos ya existentes
+function migrarPlanes() {
+  const columnas = db.prepare('PRAGMA table_info(users)').all().map(c => c.name);
+  const nuevas = [
+    ["plan", "TEXT NOT NULL DEFAULT 'free'"],
+    ['plan_expira', 'DATETIME'],
+    ['plan_cancelado', 'INTEGER NOT NULL DEFAULT 0'],
+    ['stripe_customer_id', 'TEXT'],
+    ['stripe_subscription_id', 'TEXT'],
+  ];
+  for (const [nombre, def] of nuevas) {
+    if (!columnas.includes(nombre)) db.exec(`ALTER TABLE users ADD COLUMN ${nombre} ${def}`);
+  }
 }
 
 module.exports = { getDb };

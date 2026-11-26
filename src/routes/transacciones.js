@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth');
 const { getDb } = require('../database');
+const { requierePlan } = require('../middleware/plan');
 
 // GET /api/transacciones - con filtros
 router.get('/', authMiddleware, (req, res) => {
@@ -42,7 +43,7 @@ router.get('/', authMiddleware, (req, res) => {
 });
 
 // GET /api/transacciones/exportar - todos los datos para exportar CSV
-router.get('/exportar', authMiddleware, (req, res) => {
+router.get('/exportar', authMiddleware, requierePlan('exportar', 'Exportar a CSV está disponible en el plan Plus.'), (req, res) => {
   const { tipo, mes, anio } = req.query;
   const db = getDb();
 

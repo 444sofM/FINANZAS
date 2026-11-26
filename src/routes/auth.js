@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { getDb } = require('../database');
 const authMiddleware = require('../middleware/auth');
 
+const USER_COLUMNS = 'id, nombre, email, moneda, notification_time, notifications_enabled, avatar, created_at, plan, plan_expira, plan_cancelado';
+
 // Categorías por defecto para nuevos usuarios
 function crearCategoriasDefault(db, userId) {
   const categoriasIngreso = [
@@ -68,7 +70,7 @@ router.post('/registro', async (req, res) => {
       expiresIn: '30d',
     });
 
-    const user = db.prepare('SELECT id, nombre, email, moneda, notification_time, notifications_enabled, avatar, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
+    const user = db.prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`).get(result.lastInsertRowid);
 
     res.status(201).json({ token, user });
   } catch (err) {
@@ -100,7 +102,7 @@ router.post('/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-    const { password: _, ...userSinPassword } = user;
+    const { password: _, stripe_customer_id: _c, stripe_subscription_id: _s, ...userSinPassword } = user;
     res.json({ token, user: userSinPassword });
   } catch (err) {
     console.error(err);
@@ -112,7 +114,7 @@ router.post('/login', async (req, res) => {
 router.get('/perfil', authMiddleware, (req, res) => {
   const db = getDb();
   const user = db.prepare(
-    'SELECT id, nombre, email, moneda, notification_time, notifications_enabled, avatar, created_at FROM users WHERE id = ?'
+    `SELECT ${USER_COLUMNS} FROM users WHERE id = ?`
   ).get(req.userId);
 
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -130,7 +132,7 @@ router.put('/perfil', authMiddleware, async (req, res) => {
     ).run(nombre, moneda, notification_time, notifications_enabled, avatar, req.userId);
 
     const user = db.prepare(
-      'SELECT id, nombre, email, moneda, notification_time, notifications_enabled, avatar, created_at FROM users WHERE id = ?'
+      `SELECT ${USER_COLUMNS} FROM users WHERE id = ?`
     ).get(req.userId);
 
     res.json(user);
